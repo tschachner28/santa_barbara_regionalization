@@ -1,3 +1,6 @@
+# Conducts regionalization using the Contiguity Constrained Ward algorithm.
+# In tiebreaker cases where there are multiple shortest edges, the edge connecting the regions that are most similar in population density is removed.
+
 import networkx as nx
 import pandas as pd
 
@@ -114,8 +117,8 @@ def choose_most_similar_pop_density(e_star_ru_list, e_star_rv_list):
     r_v = None
     min_diff = float('inf')
     for i, r in enumerate(e_star_ru_list): # iterate through each pair of potential r_u and r_v's
-        avg_pop_dens_ru = sum([dens_data_dict[id] for id in r]) / len(r)
-        avg_pop_dens_rv = sum([dens_data_dict[e_star_rv_list[i][j]] for j in range(0,len(e_star_rv_list[i]))]) / len(r)
+        avg_pop_dens_ru = sum([dens_data_dict[point] for point in r]) / len(r) if len(r) > 1 else dens_data_dict[r[0]]
+        avg_pop_dens_rv = sum([dens_data_dict[e_star_rv_list[i][j]] for j in range(0,len(e_star_rv_list[i]))]) / len(e_star_rv_list[i]) if len(r) > 1 else dens_data_dict[e_star_rv_list[i][0]]
         if abs(avg_pop_dens_ru - avg_pop_dens_rv) < min_diff:
             min_diff = abs(avg_pop_dens_ru - avg_pop_dens_rv)
             r_u = r
@@ -137,9 +140,6 @@ file1 = open(data_filename, "w")
 file1.writelines(headers)
 final_regions_file = 'final_regions_pop_density_tiebreaker.txt'
 
-#widths = [5,5,5,5,5]
-#format_spec = '{:{widths[0]}}  {:>{widths[1]}}  {:>{widths[2]}}  {:>{widths[3]}}  {:>{widths[4]}}'
-#print(format_spec.format(*headers, widths=widths))
 
 # Step 1
 R = pd.DataFrame(variables, columns= ['ID#']).values.tolist() # regions (set of 500 data points)
@@ -184,9 +184,9 @@ for o in ope_data_list:
 # Population Density
 # OPE
 dens_data_dict = {}
-dens_data_list = pd.DataFrame(variables, columns= ['ID#', 'AVG_OPEN']).values.tolist()
+dens_data_list = pd.DataFrame(variables, columns= ['ID#', 'DENSITY']).values.tolist()
 for d in dens_data_list:
-    dens_data_dict[d[0]] = d[1]
+    dens_data_dict[d[0]] = float(d[1].replace(',', ''))
 
 # Step 2: Initialize graph's edge set to empty set
 G = nx.Graph()
@@ -219,7 +219,7 @@ while len(R) > 2 and len(list(G.edges())) > 1:
 
 
 
-    # if multiple shortest edges, choose the one connecting the regions with the smallest combined ID
+    # if multiple shortest edges, choose the one connecting the regions with the most similar population density
     if len(e_star_r1_list) > 1:
         r_u, r_v = choose_most_similar_pop_density(e_star_r1_list, e_star_r2_list)
 
@@ -231,10 +231,6 @@ while len(R) > 2 and len(list(G.edges())) > 1:
     r_u_r_v_ssd = e_star
     r_u_ssd = get_SSD_one_region(r_u)
     r_v_ssd = get_SSD_one_region(r_v)
-
-
-    if while_loop_repeats == 5:
-        y = 1
 
     G.remove_edge(r_u, r_v) # remove e_star from edge set
     new_r = tuple(r_u) + tuple(r_v)
@@ -251,28 +247,20 @@ while len(R) > 2 and len(list(G.edges())) > 1:
             G.remove_edge(e[0], e[1])
             edges_to_append.append([new_r, e[1], new_weight])
         if e[1] == r_u or e[1] == r_v:
-            if while_loop_repeats == 432:
-                z = 2
             new_weight, ssd_ru, ssd_rv = get_SSD_two_regions(e[0], new_r)
             G.remove_edge(e[0], e[1])
             edges_to_append.append([e[0], new_r, new_weight])
 
     # Add the new edges to G
     for edge in edges_to_append:
-        if while_loop_repeats == 432:
-            z = 2
         G.add_edge(edge[0], edge[1], weight=edge[2])
 
     output_data = r_u, r_v, r_u_ssd, r_v_ssd, r_u_r_v_ssd
-    #print(format_spec.format(*output_data, widths=widths))
     file1.write(str(output_data[0]) + ', ' + str(output_data[1]) + ', ' + str(output_data[2]) + ', ' + str(output_data[3]) + ', ' + str(output_data[4]) + '\n')
 
     while_loop_repeats += 1
 
 
-
-
-x=0
 
 file2 = open(final_regions_file, "w")
 print("Final R: " + str(R))

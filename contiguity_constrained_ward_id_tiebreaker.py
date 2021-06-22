@@ -1,3 +1,6 @@
+# Conducts regionalization using the Contiguity Constrained Ward algorithm.
+# In tiebreaker cases where there are multiple shortest edges, the edge connecting the regions with the smallest combined ID is removed.
+
 import networkx as nx
 import pandas as pd
 
@@ -214,15 +217,6 @@ while len(R) > 2 and len(list(G.edges())) > 1:
 
     # if multiple shortest edges, choose the one connecting the regions with the smallest combined ID
     if len(e_star_r1_list) > 1:
-        """
-        min_combined_id = float('inf')
-        for i, r in enumerate(e_star_r1_list):
-            combined_id = sum(e_star_r1_list[i]) + sum(e_star_r2_list[i])
-            if combined_id < min_combined_id:
-                min_combined_id = combined_id
-                r_u = r
-                r_v = e_star_r2_list[i]
-        """
         r_u, r_v = choose_smallest_combined_id(e_star_r1_list, e_star_r2_list)
 
 
@@ -234,9 +228,6 @@ while len(R) > 2 and len(list(G.edges())) > 1:
     r_u_ssd = get_SSD_one_region(r_u)
     r_v_ssd = get_SSD_one_region(r_v)
 
-
-    if while_loop_repeats == 5:
-        y = 1
 
     G.remove_edge(r_u, r_v) # remove e_star from edge set
     new_r = tuple(r_u) + tuple(r_v)
@@ -253,28 +244,20 @@ while len(R) > 2 and len(list(G.edges())) > 1:
             G.remove_edge(e[0], e[1])
             edges_to_append.append([new_r, e[1], new_weight])
         if e[1] == r_u or e[1] == r_v:
-            if while_loop_repeats == 432:
-                z = 2
             new_weight, ssd_ru, ssd_rv = get_SSD_two_regions(e[0], new_r)
             G.remove_edge(e[0], e[1])
             edges_to_append.append([e[0], new_r, new_weight])
 
     # Add the new edges to G
     for edge in edges_to_append:
-        if while_loop_repeats == 432:
-            z = 2
         G.add_edge(edge[0], edge[1], weight=edge[2])
 
     output_data = r_u, r_v, r_u_ssd, r_v_ssd, r_u_r_v_ssd
-    #print(format_spec.format(*output_data, widths=widths))
     file1.write(str(output_data[0]) + ', ' + str(output_data[1]) + ', ' + str(output_data[2]) + ', ' + str(output_data[3]) + ', ' + str(output_data[4]) + '\n')
 
     while_loop_repeats += 1
 
 
-
-
-x=0
 
 file2 = open(final_regions_file, "w")
 print("Final R: " + str(R))
