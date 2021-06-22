@@ -278,10 +278,10 @@ file2 = open(final_regions_file, "w")
 print("Final R: " + str(R))
 file2.write("Final R: " + str(R) + "\n")
 for i, r in enumerate(R):
-    print("IDs in R" + str(i) + ": " + str(r))
-    file2.write("IDs in R" + str(i) + ": " + str(r) + "\n")
-    print("R" + str(i) + " Length: " + str(len(r)))
-    file2.write("R" + str(i) + " Length: " + str(len(r)) + "\n")
+    print("IDs in r" + str(i) + ": " + str(r))
+    file2.write("IDs in r" + str(i) + ": " + str(r) + "\n")
+    print("r" + str(i) + " Length: " + str(len(r)))
+    file2.write("r" + str(i) + " Length: " + str(len(r)) + "\n")
 
 
 
