@@ -251,11 +251,15 @@ while len(R) > 2 and len(list(G.edges())) > 1:
 
 
 x=0
+final_regions_file = 'final_regions_id_tiebreaker.txt'
+file2 = open(final_regions_file, "w")
 print("Final R: " + str(R))
+file2.write("Final R: " + str(R) + "\n")
 for i, r in enumerate(R):
     print("IDs in R" + str(i) + ": " + str(r))
+    file2.write("IDs in R" + str(i) + ": " + str(r) + "\n")
     print("R" + str(i) + " Length: " + str(len(r)))
-
+    file2.write("R" + str(i) + " Length: " + str(len(r)) + "\n")
 
 
 
