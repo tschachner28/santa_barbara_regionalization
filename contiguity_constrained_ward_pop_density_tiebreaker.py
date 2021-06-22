@@ -105,19 +105,19 @@ def get_SSD_two_regions(r1, r2):
     return ssd_r1_r2 - ssd_list[0] - ssd_list[1], ssd_list[0], ssd_list[1]
 
 
-# Find the two regions with the smallest combined ID
+# Find the two regions with the min average population density difference (i.e. min(avg_pop_dens_ru - avg_pop_dens_rv)
 # Inputs: e_star_ru_list: list of potential r_u's (list of tuples), e_star_rv_list: list of potential r_v's (list of tuples)
 # Outputs: r_u and r_v, each of which is a list of tuples
-
-def choose_smallest_combined_id(e_star_ru_list, e_star_rv_list):
+def choose_most_similar_pop_density(e_star_ru_list, e_star_rv_list):
     print("Breaking tie between: " + str(e_star_ru_list) + " and " + str(e_star_rv_list))
     r_u = None
     r_v = None
-    min_combined_id = float('inf')
-    for i, r in enumerate(e_star_ru_list):
-        combined_id = sum(e_star_ru_list[i]) + sum(e_star_rv_list[i])
-        if combined_id < min_combined_id:
-            min_combined_id = combined_id
+    min_diff = float('inf')
+    for i, r in enumerate(e_star_ru_list): # iterate through each pair of potential r_u and r_v's
+        avg_pop_dens_ru = sum([dens_data_dict[id] for id in r]) / len(r)
+        avg_pop_dens_rv = sum([dens_data_dict[e_star_rv_list[i][j]] for j in range(0,len(e_star_rv_list[i]))]) / len(r)
+        if abs(avg_pop_dens_ru - avg_pop_dens_rv) < min_diff:
+            min_diff = abs(avg_pop_dens_ru - avg_pop_dens_rv)
             r_u = r
             r_v = e_star_rv_list[i]
     print("Chose: " + str(r_u) + " and " + str(r_v))
@@ -131,11 +131,11 @@ variables = pd.read_csv('all6variables_regionalization_final.xlsx - ALL6VARIABLE
 contiguity_data = pd.read_csv('all6variables_regionalization_final.xlsx - CONTIGUITY.csv', delimiter=',')
 
 # Output files
-data_filename = 'regionalization_id_tiebreaker.txt'
+data_filename = 'regionalization_pop_density_tiebreaker.txt'
 headers = 'r_u, r_v, r_u SSD, r_v SSD, r_u and r_v SSD\n'  # Column names
 file1 = open(data_filename, "w")
 file1.writelines(headers)
-final_regions_file = 'final_regions_id_tiebreaker.txt'
+final_regions_file = 'final_regions_pop_density_tiebreaker.txt'
 
 #widths = [5,5,5,5,5]
 #format_spec = '{:{widths[0]}}  {:>{widths[1]}}  {:>{widths[2]}}  {:>{widths[3]}}  {:>{widths[4]}}'
@@ -181,6 +181,13 @@ ope_data_list = pd.DataFrame(variables, columns= ['ID#', 'AVG_OPEN']).values.tol
 for o in ope_data_list:
     ope_data_dict[o[0]] = o[1]
 
+# Population Density
+# OPE
+dens_data_dict = {}
+dens_data_list = pd.DataFrame(variables, columns= ['ID#', 'AVG_OPEN']).values.tolist()
+for d in dens_data_list:
+    dens_data_dict[d[0]] = d[1]
+
 # Step 2: Initialize graph's edge set to empty set
 G = nx.Graph()
 C_list = pd.DataFrame(contiguity_data, columns= ['source_ID', 'nbr_ID']).values.tolist()
@@ -214,16 +221,7 @@ while len(R) > 2 and len(list(G.edges())) > 1:
 
     # if multiple shortest edges, choose the one connecting the regions with the smallest combined ID
     if len(e_star_r1_list) > 1:
-        """
-        min_combined_id = float('inf')
-        for i, r in enumerate(e_star_r1_list):
-            combined_id = sum(e_star_r1_list[i]) + sum(e_star_r2_list[i])
-            if combined_id < min_combined_id:
-                min_combined_id = combined_id
-                r_u = r
-                r_v = e_star_r2_list[i]
-        """
-        r_u, r_v = choose_smallest_combined_id(e_star_r1_list, e_star_r2_list)
+        r_u, r_v = choose_most_similar_pop_density(e_star_r1_list, e_star_r2_list)
 
 
     else:
