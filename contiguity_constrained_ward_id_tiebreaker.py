@@ -108,10 +108,51 @@ def get_SSD_two_regions(r1, r2):
     return ssd_r1_r2 - ssd_list[0] - ssd_list[1], ssd_list[0], ssd_list[1]
 
 
+# Find the SSD for a given set of regions
+# Input: regions (list of lists)
+# Output: SSD (float)
+def get_ssd_current_regions(regions):
+    ssd = 0
+
+    # Calculate SSD of each region
+    for i, r in enumerate(regions):
+        r_pol_sum = sum(political_data_dict[point] for point in r) if len(r) > 1 else political_data_dict[r[0]]
+        r_pol_mean = r_pol_sum / len(r)
+        for point in r:
+            ssd += pow(political_data_dict[point] - r_pol_mean, 2)
+
+        r_ext_sum = sum(ext_data_dict[point] for point in r) if len(r) > 1 else ext_data_dict[r[0]]
+        r_ext_mean = r_ext_sum / len(r)
+        for point in r:
+            ssd += pow(ext_data_dict[point] - r_ext_mean, 2)
+
+        r_agr_sum = sum(agr_data_dict[point] for point in r) if len(r) > 1 else agr_data_dict[r[0]]
+        r_agr_mean = r_agr_sum / len(r)
+        for point in r:
+            ssd += pow(agr_data_dict[point] - r_agr_mean, 2)
+
+        r_con_sum = sum(con_data_dict[point] for point in r) if len(r) > 1 else con_data_dict[r[0]]
+        r_con_mean = r_con_sum / len(r)
+        for point in r:
+            ssd += pow(con_data_dict[point] - r_con_mean, 2)
+
+        r_neu_sum = sum(neu_data_dict[point] for point in r) if len(r) > 1 else neu_data_dict[r[0]]
+        r_neu_mean = r_neu_sum / len(r)
+        for point in r:
+            ssd += pow(neu_data_dict[point] - r_neu_mean, 2)
+
+        r_ope_sum = sum(ope_data_dict[point] for point in r) if len(r) > 1 else ope_data_dict[r[0]]
+        r_ope_mean = r_ope_sum / len(r)
+        for point in r:
+            ssd += pow(ope_data_dict[point] - r_ope_mean, 2)
+
+    return ssd
+
+
+
 # Find the two regions with the smallest combined ID
 # Inputs: e_star_ru_list: list of potential r_u's (list of tuples), e_star_rv_list: list of potential r_v's (list of tuples)
 # Outputs: r_u and r_v, each of which is a list of tuples
-
 def choose_smallest_combined_id(e_star_ru_list, e_star_rv_list):
     print("Breaking tie between: " + str(e_star_ru_list) + " and " + str(e_star_rv_list))
     r_u = None
@@ -135,14 +176,10 @@ contiguity_data = pd.read_csv('all6variables_regionalization_final.xlsx - CONTIG
 
 # Output files
 data_filename = 'regionalization_id_tiebreaker.txt'
-headers = 'r_u, r_v, r_u SSD, r_v SSD, r_u and r_v SSD\n'  # Column names
+headers = 'r_u, r_v, r_u SSD, r_v SSD, sum of within-region SSD\n'  # Column names
 file1 = open(data_filename, "w")
 file1.writelines(headers)
 final_regions_file = 'final_regions_id_tiebreaker.txt'
-
-#widths = [5,5,5,5,5]
-#format_spec = '{:{widths[0]}}  {:>{widths[1]}}  {:>{widths[2]}}  {:>{widths[3]}}  {:>{widths[4]}}'
-#print(format_spec.format(*headers, widths=widths))
 
 # Step 1
 R = pd.DataFrame(variables, columns= ['ID#']).values.tolist() # regions (set of 500 data points)
@@ -206,6 +243,7 @@ for r_u in R:
 removed_edge_lengths = []
 while_loop_repeats = 0
 while len(R) > 2 and len(list(G.edges())) > 1:
+#while len(R) > 1 and len(list(G.edges())) > 0:
     e_star = min([e[2]['weight'] for i, e in enumerate(G.edges(data=True))]) # length of shortest edge
     removed_edge_lengths.append(e_star)
     e_star_r1_list = [val[0] for i,val in enumerate(G.edges(data=True)) if val[2]['weight'] == e_star] # regions that this shortest edge connects
@@ -252,7 +290,8 @@ while len(R) > 2 and len(list(G.edges())) > 1:
     for edge in edges_to_append:
         G.add_edge(edge[0], edge[1], weight=edge[2])
 
-    output_data = r_u, r_v, r_u_ssd, r_v_ssd, r_u_r_v_ssd
+    regionalization_result_ssd = get_ssd_current_regions(R)
+    output_data = r_u, r_v, r_u_ssd, r_v_ssd, regionalization_result_ssd
     file1.write(str(output_data[0]) + ', ' + str(output_data[1]) + ', ' + str(output_data[2]) + ', ' + str(output_data[3]) + ', ' + str(output_data[4]) + '\n')
 
     while_loop_repeats += 1
