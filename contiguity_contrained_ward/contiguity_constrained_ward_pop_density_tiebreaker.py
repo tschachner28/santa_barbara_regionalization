@@ -387,6 +387,8 @@ def wards_algorithm(first_order_edges=False):
         file2.write("IDs in r" + str(i) + ": " + str(r) + "\n")
         print("r" + str(i) + " Length: " + str(len(r)))
         file2.write("r" + str(i) + " Length: " + str(len(r)) + "\n")
+    if first_order_edges:
+        file2.write("All edges removed: " + str(G_min_edges.edges(data=True)))
 
     return G, G_min_edges
 
