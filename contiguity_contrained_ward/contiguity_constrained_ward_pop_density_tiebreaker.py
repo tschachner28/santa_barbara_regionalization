@@ -120,15 +120,15 @@ def get_SSD_two_regions(r1, r2, political_data_dict, ext_data_dict, agr_data_dic
 
     return ssd_r1_r2 - ssd_list[0] - ssd_list[1], ssd_list[0], ssd_list[1]
 
-# Input: new_r (tuple of IDs), connecting_id (tuple), r_u_region and r_v_region (each is list of lists)
+# Input: r1 (list of lists), r2 (list of lists), C, R,
 # Output: the SSD of the smallest first order edge (float), ID that this edge connects to in r1, ID that this edge connects to in r2
-def get_min_ssd_and_first_order_edge(new_r, connecting_id, C, R, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict):
+def get_min_ssd_and_first_order_edge(r1, r2, C, R, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict):
     min_ssd = float('inf')
     id1 = None
     id2 = None
-    connecting_id_region = [r for r in R if connecting_id[0] in r][0]
-    for id_r1 in new_r:
-        for id_r2 in connecting_id_region:
+
+    for id_r1 in r1:
+        for id_r2 in r2:
             # For each contiguous pair of IDs, one from each region, choose the pair with the min SSD
             if id_r1 in C[id_r2] or id_r2 in C[id_r1]:
                 ssd, ssd_r1, ssd_r2 = get_SSD_two_regions([id_r1], [id_r2], political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
@@ -202,15 +202,24 @@ def wards_algorithm(first_order_edges=False):
     # Output files
     data_filename = ''
     final_regions_file = ''
+    edges_removed_file = ''
     if not first_order_edges:
         data_filename = 'regionalization_pop_density_tiebreaker.txt'
         final_regions_file = 'final_regions_pop_density_tiebreaker.txt'
     else:
         data_filename = 'regionalization_pop_density_tiebreaker_first_order_edges.txt'
         final_regions_file = 'final_regions_pop_density_tiebreaker_first_order_edges.txt'
+        edges_removed_file = 'first_order_edges_tree_pop_density_tiebreaker.txt'
     headers = 'r_u, r_v, r_u SSD, r_v SSD, sum of within-region SSD\n'  # Column names
     file1 = open(data_filename, "w")
     file1.writelines(headers)
+
+    # Record edges removed if specified need to record first order edges
+    file3 = None
+    if first_order_edges:
+        file3_headers = 'id1, id2, weight\n'  # Column names
+        file3 = open(edges_removed_file, "w")
+        file3.writelines(file3_headers)
 
 
     # Log file
@@ -285,6 +294,7 @@ def wards_algorithm(first_order_edges=False):
     removed_edge_lengths = []
     G_min_edges = nx.Graph()  # This tree is used in Algorithm 2 (tree_partitioning_algorithm/tree_partitioning_algorithm.py). It contains the edges that are removed, as well as the final edge that remains.
     while_loop_repeats = 0
+    num_merges = 0
     while len(R) > 2 and len(list(G.edges())) > 1:
         e_star = min([e[2]['weight'] for i, e in enumerate(G.edges(data=True))])  # length of shortest edge
         removed_edge_lengths.append(e_star)
@@ -305,70 +315,44 @@ def wards_algorithm(first_order_edges=False):
         r_u_ssd = get_SSD_one_region(r_u, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
         r_v_ssd = get_SSD_one_region(r_v, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
 
-        G_min_edges.add_edge(r_u, r_v, weight=G.get_edge_data(r_u, r_v)[
-            'weight'])  # add edge to graph that will be used in Algorithm 2
         G.remove_edge(r_u, r_v)  # remove e_star from edge set
         log_file.write("removed " + str(r_u) + ", " + str(r_v) + "\n")
+        num_merges += 1
 
-        new_r = None
-        if not first_order_edges:
-            # Remove the regions the edge connects to from R, and replace it with the union of these regions
-            new_r = tuple(r_u) + tuple(r_v)
-            R.remove(list(r_u))  # remove r_u from R
-            R.remove(list(r_v))  # remove r_v from R
-            R.append(list(new_r))  # add r_u = r_u U r_v (union of both) to R
-            # Update the id to region mappings
-        else:
-            # Remove the regions where the IDs the edge connects to are located, and replace it with the union of these regions
-            r_u_region = [r for r in R if r_u[0] in r][0]
-            r_v_region = [r for r in R if r_v[0] in r][0]
-            new_r = r_u_region + r_v_region
-            R.remove(r_u_region)
-            R.remove(r_v_region)
-            R.append(new_r)
-            log_file.write("new R: " + str(R) + "\n")
-            # Remove any other edges that connected r_u and r_v
-            for id1 in r_u_region:
-                for id2 in r_v_region:
-                    if (tuple([id1]), tuple([id2])) in G.edges():
-                        G.remove_edge(tuple([id1]), tuple([id2]))
-                        log_file.write("removed " + str(tuple([id1])) + ", " + str(tuple([id2])) + "\n")
+        if first_order_edges:  # record the shortest first order edges connecting the two regions
+            min_ssd, id1, id2 = get_min_ssd_and_first_order_edge(r_u, r_v, C, R, political_data_dict, ext_data_dict,
+                                                                 agr_data_dict, con_data_dict, neu_data_dict,
+                                                                 ope_data_dict)
+            G_min_edges.add_edge(id1, id2, weight=min_ssd)  # add edge to graph that will be used in Algorithm 2
+            file3.write(str(id1) + ", " + str(id2) + ", " + str(min_ssd) + "\n")
 
+
+        # Remove the regions the edge connects to from R, and replace it with the union of these regions
+        new_r = tuple(r_u) + tuple(r_v)
+        R.remove(list(r_u))  # remove r_u from R
+        R.remove(list(r_v))  # remove r_v from R
+        R.append(list(new_r))  # add r_u = r_u U r_v (union of both) to R
 
         edges_to_append = []  # list of lists, each of which contains [v1, v2, weight] representing the new edge
 
         # redirect edges incident on r_u to new_r, and edges incident on r_v to new_r, with the new weights
-        if not first_order_edges: # Original Ward's algorithm
-            for e in list(G.edges()):
-                if e[0] == r_u or e[0] == r_v:
-                    new_weight, ssd_ru, ssd_rv = get_SSD_two_regions(new_r, e[1], political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
-                    G.remove_edge(e[0], e[1])
-                    edges_to_append.append([new_r, e[1], new_weight])
-                if e[1] == r_u or e[1] == r_v:
-                    new_weight, ssd_ru, ssd_rv = get_SSD_two_regions(e[0], new_r, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
-                    G.remove_edge(e[0], e[1])
-                    edges_to_append.append([e[0], new_r, new_weight])
+        for e in list(G.edges()):
+            if e[0] == r_u or e[0] == r_v:
+                new_weight, ssd_ru, ssd_rv = get_SSD_two_regions(new_r, e[1], political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
+                G.remove_edge(e[0], e[1])
+                edges_to_append.append([new_r, e[1], new_weight])
 
-        else: # When redirecting edges, add a first order edge between the ID in r_u and the ID in r_v with the smallest SSD between them
-            for e in list(G.edges()):
-                if e[0] == r_u or e[0] == r_v:
-                    if while_loop_repeats == 100:
-                        x=0
-                    new_weight, id1, id2 = get_min_ssd_and_first_order_edge(new_r, e[1], C, R, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
-                    G.remove_edge(e[0], e[1])
-                    log_file.write("removed " + str(e[0]) + ", " + str(e[1]) + "\n")
-                    edges_to_append.append([tuple([id1]), tuple([id2]), new_weight])
-                    log_file.write("redirected edge " + str(tuple([id1])) + ", " + str(tuple([id2])) + ", weight=" + str(new_weight) + "\n")
-                if e[1] == r_u or e[1] == r_v:
-                    new_weight, id1, id2 = get_min_ssd_and_first_order_edge(new_r, e[0], C, R, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
-                    G.remove_edge(e[0], e[1])
-                    log_file.write("removed " + str(e[0]) + ", " + str(e[1]) + "\n")
-                    edges_to_append.append([tuple([id1]), tuple([id2]), new_weight])
-                    log_file.write("redirected edge " + str(tuple([id1])) + ", " + str(tuple([id2])) + ", weight=" + str(new_weight) + "\n")
+            if e[1] == r_u or e[1] == r_v:
+                new_weight, ssd_ru, ssd_rv = get_SSD_two_regions(e[0], new_r, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
+                G.remove_edge(e[0], e[1])
+                edges_to_append.append([e[0], new_r, new_weight])
+
 
         # Add the new edges to G
         for edge in edges_to_append:
             G.add_edge(edge[0], edge[1], weight=edge[2])
+
+
 
         # output_data = r_u, r_v, r_u_ssd, r_v_ssd, r_u_r_v_ssd
         # file1.write(str(output_data[0]) + ', ' + str(output_data[1]) + ', ' + str(output_data[2]) + ', ' + str(output_data[3]) + ', ' + str(output_data[4]) + '\n')
@@ -387,8 +371,12 @@ def wards_algorithm(first_order_edges=False):
         file2.write("IDs in r" + str(i) + ": " + str(r) + "\n")
         print("r" + str(i) + " Length: " + str(len(r)))
         file2.write("r" + str(i) + " Length: " + str(len(r)) + "\n")
+    file2.write("Number of merges: " + str(num_merges))
+
     if first_order_edges:
-        file2.write("All edges removed: " + str(G_min_edges.edges(data=True)))
+        last_edge_weight, last_e1, last_e2 = get_min_ssd_and_first_order_edge(R[0], R[1], C, R, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
+        G_min_edges.add_edge(last_e1, last_e2, weight=last_edge_weight)  # add final edge remaining in G
+        file3.write(str(last_e1) + ", " + str(last_e2) + ", " + str(last_edge_weight) + "\n")
 
     return G, G_min_edges
 
@@ -397,13 +385,10 @@ def wards_algorithm(first_order_edges=False):
 # Returns a tree containing the set of edges removed, as well as the single edge remaining in the final cluster
 def get_ward_tree():
     G, G_min_edges = wards_algorithm(first_order_edges=True)
-    last_edge = list(G.edges())[0]
-    last_edge_weight = G.get_edge_data(last_edge[0], last_edge[1])['weight']
-    G_min_edges.add_edge(last_edge[0], last_edge[1], weight=last_edge_weight) # add final edge remaining in G
     print("Edges for tree in algorithm 2: " + str(list(G_min_edges.edges())))
     return G_min_edges
 
 
 if __name__ == '__main__':
-    #wards_algorithm()
+    wards_algorithm()
     get_ward_tree()
