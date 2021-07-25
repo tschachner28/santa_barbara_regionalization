@@ -4,17 +4,21 @@ import os
 import pandas as pd
 import networkx as nx
 sys.path.append(os.path.abspath('../contiguity_constrained_ward/contiguity_constrained_ward.py'))
-from contiguity_contrained_ward.contiguity_constrained_ward_pop_density_tiebreaker import get_ward_tree, get_SSD_one_region, get_ssd_current_regions
+from contiguity_contrained_ward.contiguity_constrained_ward_pop_density_tiebreaker import get_ward_tree, get_SSD_one_region, get_ssd_current_regions, choose_most_dissimilar_pop_density
 
 # Calculates hg*, the homogeneity gain, of a tree
 # Input: An nx graph
-# Output: hg_star (a float), e_star (float), Ta and Tb (nx graphs resulting when the best edge e* is removed)
-def get_hg(tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict):
+# Output: hg_star (a float), e_star (tuple of 2 ints), Ta and Tb (nx graphs resulting when the best edge e* is removed)
+def get_hg(tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict):
     hg_star = 0
     e_star = None
     D = list(tree.edges(data=True))
     D_a = []
     D_b = []
+
+    r_u_ties = [] # list of tuples, each of which is a single ID (int)
+    r_v_ties = []
+    best_edges_trees = {} # key: a potential best edge (tuple of 2 ints), value: trees resulting when this edge is removed (list of nx graphs)
 
     for_loop_iterations = 0
     for edge in D:
@@ -24,8 +28,10 @@ def get_hg(tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu
         tree_temp = tree.copy()
         tree_temp.remove_edge(edge[0], edge[1])
         D_ia, D_ib = get_2_new_trees(tree_temp)
-        if len(D_ib.nodes()) == 0:
-            x=0
+        #if len(D_ia.nodes()) < 8 or len(D_ib.nodes()) < 8: # subtrees must have a minimum of 8 nodes
+        #    continue
+        #if len(D_ib.nodes()) == 0:
+        #    x=0
         h_D = get_SSD_one_region(list(tree_temp.nodes()), pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
         h_D_ia = get_SSD_one_region(list(D_ia.nodes()), pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
         h_D_ib = get_SSD_one_region(list(D_ib.nodes()), pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
@@ -35,6 +41,22 @@ def get_hg(tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu
             e_star = (edge[0], edge[1])
             D_a = D_ia
             D_b = D_ib
+            r_u_ties = [tuple([edge[0]])] # remove previous potential r_us that have smaller hg
+            r_v_ties = [tuple([edge[1]])]
+            best_edges_trees = {e_star: [D_ia, D_ib]}
+        elif hg == hg_star: # tie found
+            r_u_ties.append(tuple([edge[0]]))
+            r_v_ties.append(tuple([edge[1]]))
+            best_edges_trees[(edge[0], edge[1])] = [D_ia, D_ib]
+
+    if len(r_u_ties) > 1 and len(r_v_ties) > 1: # Need to break tie
+        e1, e2 = choose_most_dissimilar_pop_density(r_u_ties, r_v_ties, dens_data_dict)
+        e_star = (e1[0], e2[0])
+        D_a = best_edges_trees[e_star][0]
+        D_b = best_edges_trees[e_star][1]
+
+    #if D_a == [] or D_b == []:
+    #    x=0
     return hg_star, e_star, D_a, D_b
 
 
@@ -74,84 +96,99 @@ def get_2_new_trees(nx_graph):
 
     return new_tree1, new_tree2
 
+def tree_partitioning_regionalization(attrs=['POL IDEN', 'AVG_EXTROVERT', 'AVG_AGREEABLE', 'AVG_CONSCIENTIOUS', 'AVG_NEUROTIC', 'AVG_OPEN']):
+    ward_tree = get_ward_tree(vars_used=attrs) # build tree using output of first algorithm
 
-ward_tree = get_ward_tree() # build tree using output of first algorithm
+    # Load data from .csv files
+    variables = pd.read_csv('all6variables_regionalization_final.xlsx - ALL6VARIABLES.csv', delimiter=',')
+    contiguity_data = pd.read_csv('all6variables_regionalization_final.xlsx - CONTIGUITY.csv', delimiter=',')
 
-# Load data from .csv files
-variables = pd.read_csv('all6variables_regionalization_final.xlsx - ALL6VARIABLES.csv', delimiter=',')
-contiguity_data = pd.read_csv('all6variables_regionalization_final.xlsx - CONTIGUITY.csv', delimiter=',')
+    R = pd.DataFrame(variables, columns=['ID#']).values.tolist()  # regions (set of 500 data points)
 
-R = pd.DataFrame(variables, columns=['ID#']).values.tolist()  # regions (set of 500 data points)
+    # Load data into dictionaries
+    # political data
+    pol_data_dict = {}
+    if 'POL IDEN' in attrs:
+        pol_data_list = pd.DataFrame(variables, columns=['ID#', 'POL IDEN']).values.tolist()
+        for p in pol_data_list:
+            pol_data_dict[p[0]] = p[1]
 
-# Load data into dictionaries
-# political data
-pol_data_dict = {}
-pol_data_list = pd.DataFrame(variables, columns=['ID#', 'POL IDEN']).values.tolist()
-for p in pol_data_list:
-    pol_data_dict[p[0]] = p[1]
+    # EXT data
+    ext_data_dict = {}
+    if 'AVG_EXTROVERT' in attrs:
+        ext_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_EXTROVERT']).values.tolist()
+        for e in ext_data_list:
+            ext_data_dict[e[0]] = e[1]
 
-# EXT data
-ext_data_dict = {}
-ext_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_EXTROVERT']).values.tolist()
-for e in ext_data_list:
-    ext_data_dict[e[0]] = e[1]
+    # AGR data
+    agr_data_dict = {}
+    if 'AVG_AGREEABLE' in attrs:
+        agr_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_AGREEABLE']).values.tolist()
+        for a in agr_data_list:
+            agr_data_dict[a[0]] = a[1]
 
-# AGR data
-agr_data_dict = {}
-agr_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_AGREEABLE']).values.tolist()
-for a in agr_data_list:
-    agr_data_dict[a[0]] = a[1]
+    # CON data
+    con_data_dict = {}
+    if 'AVG_CONSCIENTIOUS' in attrs:
+        con_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_CONSCIENTIOUS']).values.tolist()
+        for c in con_data_list:
+            con_data_dict[c[0]] = c[1]
 
-# CON data
-con_data_dict = {}
-con_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_CONSCIENTIOUS']).values.tolist()
-for c in con_data_list:
-    con_data_dict[c[0]] = c[1]
+    # NEU data
+    neu_data_dict = {}
+    if 'AVG_NEUROTIC' in attrs:
+        neu_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_NEUROTIC']).values.tolist()
+        for n in neu_data_list:
+            neu_data_dict[n[0]] = n[1]
 
-# NEU data
-neu_data_dict = {}
-neu_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_NEUROTIC']).values.tolist()
-for n in neu_data_list:
-    neu_data_dict[n[0]] = n[1]
+    # OPE
+    ope_data_dict = {}
+    if 'AVG_OPEN' in attrs:
+        ope_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_OPEN']).values.tolist()
+        for o in ope_data_list:
+            ope_data_dict[o[0]] = o[1]
 
-# OPE
-ope_data_dict = {}
-ope_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_OPEN']).values.tolist()
-for o in ope_data_list:
-    ope_data_dict[o[0]] = o[1]
+    # Population Density
+    dens_data_dict = {}
+    dens_data_list = pd.DataFrame(variables, columns=['ID#', 'DENSITY']).values.tolist()
+    for d in dens_data_list:
+        dens_data_dict[d[0]] = float(d[1].replace(',', ''))
 
-# Population Density
-dens_data_dict = {}
-dens_data_list = pd.DataFrame(variables, columns=['ID#', 'DENSITY']).values.tolist()
-for d in dens_data_list:
-    dens_data_dict[d[0]] = float(d[1].replace(',', ''))
+    # Output file
+    tree_partitions_filename = 'tree_partitions'
+    vars_abbreviated = {'POL IDEN': 'POL', 'AVG_EXTROVERT': 'EXT', 'AVG_AGREEABLE': 'AGR', 'AVG_CONSCIENTIOUS': 'CON',
+                        'AVG_NEUROTIC': 'NEU', 'AVG_OPEN': 'OPE'}
+    if len(attrs) < 6:
+        for variable in attrs:
+            tree_partitions_filename += '_' + vars_abbreviated[variable]
+    tree_partitions_filename += '.txt'
+    tree_partitions_file = open(tree_partitions_filename, "w")
 
-# Output file
-tree_partitions_file = open('tree_partitions.txt', "w")
+    # Step 1: Calculate homogeneity gain of initial tree (ward_tree), and the best tree with the largest hg
+    hg_star, e_star, D_a, D_b = get_hg(ward_tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict)
+    trees = {ward_tree: hg_star} # key: tree (nxgraph), value: float. Denoted R in the article
+    for k in range(2, 31):
+        while len(list(trees.keys())) < k:
+            # Step 2: Find the best tree with the largest hg*
+            best_tree = [t for t in list(trees.keys()) if trees[t] == max(list(trees.values()))][0]
+            # Step 3: Cut best_tree into two trees by removing the best edge
+            hg_star, e_star, T_a, T_b = get_hg(best_tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict)
+            # Step 4: Calculate hg* for T_a and T_b
+            hg_star_T_a, e_star_T_a, T_a_a, T_a_b = get_hg(T_a, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict)
+            hg_star_T_b, e_star_T_b, T_b_a, T_b_b = get_hg(T_b, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict)
+            del trees[best_tree]
+            trees[T_a] = hg_star_T_a
+            trees[T_b] = hg_star_T_b
 
-# Step 1: Calculate homogeneity gain of initial tree (ward_tree), and the best tree with the largest hg
-hg_star, e_star, D_a, D_b = get_hg(ward_tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
-trees = {ward_tree: hg_star} # key: tree (nxgraph), value: float. Denoted R in the article
-for k in range(2, 31):
-    while len(list(trees.keys())) < k:
-        # Step 2: Find the best tree with the largest hg*
-        best_tree = [t for t in list(trees.keys()) if trees[t] == max(list(trees.values()))][0]
-        # Step 3: Cut best_tree into two trees by removing the best edge
-        hg_star, e_star, T_a, T_b = get_hg(best_tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
-        # Step 4: Calculate hg* for T_a and T_b
-        hg_star_T_a, e_star_T_a, T_a_a, T_a_b = get_hg(T_a, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
-        hg_star_T_b, e_star_T_b, T_b_a, T_b_b = get_hg(T_b, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
-        del trees[best_tree]
-        trees[T_a] = hg_star_T_a
-        trees[T_b] = hg_star_T_b
-
-    tree_partitions_file.write("k = " + str(k) + "\n")
-    for tree in trees.keys():
-        tree_partitions_file.write(str(tree.nodes()) + "\n")
-    current_regions = [list(tree.nodes()) for tree in trees.keys()]
-    within_region_ssd = get_ssd_current_regions(current_regions, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
-    tree_partitions_file.write("Within-Region SSD: " + str(within_region_ssd) + "\n")
-    tree_partitions_file.write("\n")
+        tree_partitions_file.write("k = " + str(k) + "\n")
+        for tree in trees.keys():
+            tree_partitions_file.write(str(tree.nodes()) + "\n")
+        current_regions = [list(tree.nodes()) for tree in trees.keys()]
+        within_region_ssd = get_ssd_current_regions(current_regions, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
+        tree_partitions_file.write("Within-Region SSD: " + str(within_region_ssd) + "\n")
+        tree_partitions_file.write("\n")
 
 
-
+if __name__ == "__main__":
+    tree_partitioning_regionalization(attrs=['POL IDEN'])
+    #tree_partitioning_regionalization()

@@ -9,27 +9,45 @@ import pandas as pd
 # Output: SSD of r
 def get_SSD_one_region(r, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict):
     ssd = 0
+    r_pol_mean = 0
+    r_ext_mean = 0
+    r_agr_mean = 0
+    r_con_mean = 0
+    r_neu_mean = 0
+    r_ope_mean = 0
 
-    r_pol_sum = sum(political_data_dict[point] for point in r) if len(r) > 1 else political_data_dict[r[0]]
-    r_pol_mean = r_pol_sum / len(r)
-    r_ext_sum = sum(ext_data_dict[point] for point in r) if len(r) > 1 else ext_data_dict[r[0]]
-    r_ext_mean = r_ext_sum / len(r)
-    r_agr_sum = sum(agr_data_dict[point] for point in r) if len(r) > 1 else agr_data_dict[r[0]]
-    r_agr_mean = r_agr_sum / len(r)
-    r_con_sum = sum(con_data_dict[point] for point in r) if len(r) > 1 else con_data_dict[r[0]]
-    r_con_mean = r_con_sum / len(r)
-    r_neu_sum = sum(neu_data_dict[point] for point in r) if len(r) > 1 else neu_data_dict[r[0]]
-    r_neu_mean = r_neu_sum / len(r)
-    r_ope_sum = sum(ope_data_dict[point] for point in r) if len(r) > 1 else ope_data_dict[r[0]]
-    r_ope_mean = r_ope_sum / len(r)
+    if len(political_data_dict) > 0:
+        r_pol_sum = sum(political_data_dict[point] for point in r) if len(r) > 1 else political_data_dict[r[0]]
+        r_pol_mean = r_pol_sum / len(r)
+    if len(ext_data_dict) > 0:
+        r_ext_sum = sum(ext_data_dict[point] for point in r) if len(r) > 1 else ext_data_dict[r[0]]
+        r_ext_mean = r_ext_sum / len(r)
+    if len(agr_data_dict) > 0:
+        r_agr_sum = sum(agr_data_dict[point] for point in r) if len(r) > 1 else agr_data_dict[r[0]]
+        r_agr_mean = r_agr_sum / len(r)
+    if len(con_data_dict) > 0:
+        r_con_sum = sum(con_data_dict[point] for point in r) if len(r) > 1 else con_data_dict[r[0]]
+        r_con_mean = r_con_sum / len(r)
+    if len(neu_data_dict) > 0:
+        r_neu_sum = sum(neu_data_dict[point] for point in r) if len(r) > 1 else neu_data_dict[r[0]]
+        r_neu_mean = r_neu_sum / len(r)
+    if len(ope_data_dict) > 0:
+        r_ope_sum = sum(ope_data_dict[point] for point in r) if len(r) > 1 else ope_data_dict[r[0]]
+        r_ope_mean = r_ope_sum / len(r)
 
     for point in r:
-        ssd += pow(political_data_dict[point] - r_pol_mean, 2)
-        ssd += pow(ext_data_dict[point] - r_ext_mean, 2)
-        ssd += pow(agr_data_dict[point] - r_agr_mean, 2)
-        ssd += pow(con_data_dict[point] - r_con_mean, 2)
-        ssd += pow(neu_data_dict[point] - r_neu_mean, 2)
-        ssd += pow(ope_data_dict[point] - r_ope_mean, 2)
+        if len(political_data_dict) > 0:
+            ssd += pow(political_data_dict[point] - r_pol_mean, 2)
+        if len(ext_data_dict) > 0:
+            ssd += pow(ext_data_dict[point] - r_ext_mean, 2)
+        if len(agr_data_dict) > 0:
+            ssd += pow(agr_data_dict[point] - r_agr_mean, 2)
+        if len(con_data_dict) > 0:
+            ssd += pow(con_data_dict[point] - r_con_mean, 2)
+        if len(neu_data_dict) > 0:
+            ssd += pow(neu_data_dict[point] - r_neu_mean, 2)
+        if len(ope_data_dict) > 0:
+            ssd += pow(ope_data_dict[point] - r_ope_mean, 2)
 
     return ssd
 
@@ -53,19 +71,31 @@ def get_SSD_two_regions(r1, r2, political_data_dict, ext_data_dict, agr_data_dic
         len_r = len(r)
         if len_r > 1:
             for point in r:
-                r_pol_sum += political_data_dict[point]
-                r_ext_sum += ext_data_dict[point]
-                r_agr_sum += agr_data_dict[point]
-                r_con_sum += con_data_dict[point]
-                r_neu_sum += neu_data_dict[point]
-                r_ope_sum += ope_data_dict[point]
+                if len(political_data_dict) > 0:
+                    r_pol_sum += political_data_dict[point]
+                if len(ext_data_dict) > 0:
+                    r_ext_sum += ext_data_dict[point]
+                if len(agr_data_dict) > 0:
+                    r_agr_sum += agr_data_dict[point]
+                if len(con_data_dict) > 0:
+                    r_con_sum += con_data_dict[point]
+                if len(neu_data_dict) > 0:
+                    r_neu_sum += neu_data_dict[point]
+                if len(ope_data_dict) > 0:
+                    r_ope_sum += ope_data_dict[point]
         else:
-            r_pol_sum += political_data_dict[r[0]]
-            r_ext_sum += ext_data_dict[r[0]]
-            r_agr_sum += agr_data_dict[r[0]]
-            r_con_sum += con_data_dict[r[0]]
-            r_neu_sum += neu_data_dict[r[0]]
-            r_ope_sum += ope_data_dict[r[0]]
+            if len(political_data_dict) > 0:
+                r_pol_sum += political_data_dict[r[0]]
+            if len(ext_data_dict) > 0:
+                r_ext_sum += ext_data_dict[r[0]]
+            if len(agr_data_dict) > 0:
+                r_agr_sum += agr_data_dict[r[0]]
+            if len(con_data_dict) > 0:
+                r_con_sum += con_data_dict[r[0]]
+            if len(neu_data_dict) > 0:
+                r_neu_sum += neu_data_dict[r[0]]
+            if len(ope_data_dict) > 0:
+                r_ope_sum += ope_data_dict[r[0]]
 
         sums_dict[regions_str[i]].append(r_pol_sum)
         r_pol_mean = r_pol_sum / len_r
@@ -86,16 +116,22 @@ def get_SSD_two_regions(r1, r2, political_data_dict, ext_data_dict, agr_data_dic
         r_ope_mean = r_ope_sum / len_r
 
         for point in r:
-            ssd_list[i] += pow(political_data_dict[point] - r_pol_mean, 2)
-            ssd_list[i] += pow(ext_data_dict[point] - r_ext_mean, 2)
-            ssd_list[i] += pow(agr_data_dict[point] - r_agr_mean, 2)
-            ssd_list[i] += pow(con_data_dict[point] - r_con_mean, 2)
-            ssd_list[i] += pow(neu_data_dict[point] - r_neu_mean, 2)
-            ssd_list[i] += pow(ope_data_dict[point] - r_ope_mean, 2)
+            if len(political_data_dict) > 0:
+                ssd_list[i] += pow(political_data_dict[point] - r_pol_mean, 2)
+            if len(ext_data_dict) > 0:
+                ssd_list[i] += pow(ext_data_dict[point] - r_ext_mean, 2)
+            if len(agr_data_dict) > 0:
+                ssd_list[i] += pow(agr_data_dict[point] - r_agr_mean, 2)
+            if len(con_data_dict) > 0:
+                ssd_list[i] += pow(con_data_dict[point] - r_con_mean, 2)
+            if len(neu_data_dict) > 0:
+                ssd_list[i] += pow(neu_data_dict[point] - r_neu_mean, 2)
+            if len(ope_data_dict) > 0:
+                ssd_list[i] += pow(ope_data_dict[point] - r_ope_mean, 2)
 
     # Calculate SSD of the union of the regions
     ssd_r1_r2 = 0
-    r1_r2_pol_mean = (sums_dict["r1"][0] + sums_dict["r2"][0]) / (len(r1) + len(r2)) # mean for pol iden
+    r1_r2_pol_mean = (sums_dict["r1"][0] + sums_dict["r2"][0]) / (len(r1) + len(r2))  # mean for pol iden
     r1_r2_ext_mean = (sums_dict["r1"][1] + sums_dict["r2"][1]) / (len(r1) + len(r2))  # mean for ext
     r1_r2_agr_mean = (sums_dict["r1"][2] + sums_dict["r2"][2]) / (len(r1) + len(r2))  # mean for agr
     r1_r2_con_mean = (sums_dict["r1"][3] + sums_dict["r2"][3]) / (len(r1) + len(r2))  # mean for con
@@ -103,29 +139,43 @@ def get_SSD_two_regions(r1, r2, political_data_dict, ext_data_dict, agr_data_dic
     r1_r2_ope_mean = (sums_dict["r1"][5] + sums_dict["r2"][5]) / (len(r1) + len(r2))  # mean for ope
 
     for point in r1:
-        ssd_r1_r2 += pow(political_data_dict[point] - r1_r2_pol_mean, 2)
-        ssd_r1_r2 += pow(ext_data_dict[point] - r1_r2_ext_mean, 2)
-        ssd_r1_r2 += pow(agr_data_dict[point] - r1_r2_agr_mean, 2)
-        ssd_r1_r2 += pow(con_data_dict[point] - r1_r2_con_mean, 2)
-        ssd_r1_r2 += pow(neu_data_dict[point] - r1_r2_neu_mean, 2)
-        ssd_r1_r2 += pow(ope_data_dict[point] - r1_r2_ope_mean, 2)
+        if len(political_data_dict) > 0:
+            ssd_r1_r2 += pow(political_data_dict[point] - r1_r2_pol_mean, 2)
+        if len(ext_data_dict) > 0:
+            ssd_r1_r2 += pow(ext_data_dict[point] - r1_r2_ext_mean, 2)
+        if len(ext_data_dict) > 0:
+            ssd_r1_r2 += pow(agr_data_dict[point] - r1_r2_agr_mean, 2)
+        if len(con_data_dict) > 0:
+            ssd_r1_r2 += pow(con_data_dict[point] - r1_r2_con_mean, 2)
+        if len(neu_data_dict) > 0:
+            ssd_r1_r2 += pow(neu_data_dict[point] - r1_r2_neu_mean, 2)
+        if len(ope_data_dict) > 0:
+            ssd_r1_r2 += pow(ope_data_dict[point] - r1_r2_ope_mean, 2)
 
     for point in r2:
-        ssd_r1_r2 += pow(political_data_dict[point] - r1_r2_pol_mean, 2)
-        ssd_r1_r2 += pow(ext_data_dict[point] - r1_r2_ext_mean, 2)
-        ssd_r1_r2 += pow(agr_data_dict[point] - r1_r2_agr_mean, 2)
-        ssd_r1_r2 += pow(con_data_dict[point] - r1_r2_con_mean, 2)
-        ssd_r1_r2 += pow(neu_data_dict[point] - r1_r2_neu_mean, 2)
-        ssd_r1_r2 += pow(ope_data_dict[point] - r1_r2_ope_mean, 2)
+        if len(political_data_dict) > 0:
+            ssd_r1_r2 += pow(political_data_dict[point] - r1_r2_pol_mean, 2)
+        if len(ext_data_dict) > 0:
+            ssd_r1_r2 += pow(ext_data_dict[point] - r1_r2_ext_mean, 2)
+        if len(agr_data_dict) > 0:
+            ssd_r1_r2 += pow(agr_data_dict[point] - r1_r2_agr_mean, 2)
+        if len(con_data_dict) > 0:
+            ssd_r1_r2 += pow(con_data_dict[point] - r1_r2_con_mean, 2)
+        if len(neu_data_dict) > 0:
+            ssd_r1_r2 += pow(neu_data_dict[point] - r1_r2_neu_mean, 2)
+        if len(ope_data_dict) > 0:
+            ssd_r1_r2 += pow(ope_data_dict[point] - r1_r2_ope_mean, 2)
 
     return ssd_r1_r2 - ssd_list[0] - ssd_list[1], ssd_list[0], ssd_list[1]
 
 # Input: r1 (list of lists), r2 (list of lists), C, R,
 # Output: the SSD of the smallest first order edge (float), ID that this edge connects to in r1, ID that this edge connects to in r2
-def get_min_ssd_and_first_order_edge(r1, r2, C, R, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict):
+def get_min_ssd_and_first_order_edge(r1, r2, C, R, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict):
     min_ssd = float('inf')
     id1 = None
     id2 = None
+    r_u_ties = [] # list of IDs (ints)
+    r_v_ties = [] # list of IDs (ints)
 
     for id_r1 in r1:
         for id_r2 in r2:
@@ -136,39 +186,61 @@ def get_min_ssd_and_first_order_edge(r1, r2, C, R, political_data_dict, ext_data
                     min_ssd = ssd
                     id1 = id_r1
                     id2 = id_r2
+                    r_u_ties = [tuple([id_r1])]
+                    r_v_ties = [tuple([id_r2])]
+                elif ssd == min_ssd:
+                    r_u_ties.append(tuple([id_r1]))
+                    r_v_ties.append(tuple([id_r2]))
+    if len(r_u_ties) > 1 and len(r_v_ties) > 1: # need tiebreaker
+        id1_tuple, id2_tuple = choose_most_similar_pop_density(r_u_ties, r_v_ties, dens_data_dict)
+        id1 = id1_tuple[0]
+        id2 = id2_tuple[0]
     return min_ssd, id1, id2
 
 # Output: SSD (float)
 def get_ssd_current_regions(regions, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict):
     ssd = 0
+    r_pol_mean = 0
+    r_ext_mean = 0
+    r_agr_mean = 0
+    r_con_mean = 0
+    r_neu_mean = 0
+    r_ope_mean = 0
 
     # Calculate SSD of each region
     for i, r in enumerate(regions):
-        r_pol_sum = sum(political_data_dict[point] for point in r) if len(r) > 1 else political_data_dict[r[0]]
-        r_pol_mean = r_pol_sum / len(r)
-
-        r_ext_sum = sum(ext_data_dict[point] for point in r) if len(r) > 1 else ext_data_dict[r[0]]
-        r_ext_mean = r_ext_sum / len(r)
-
-        r_agr_sum = sum(agr_data_dict[point] for point in r) if len(r) > 1 else agr_data_dict[r[0]]
-        r_agr_mean = r_agr_sum / len(r)
-
-        r_con_sum = sum(con_data_dict[point] for point in r) if len(r) > 1 else con_data_dict[r[0]]
-        r_con_mean = r_con_sum / len(r)
-
-        r_neu_sum = sum(neu_data_dict[point] for point in r) if len(r) > 1 else neu_data_dict[r[0]]
-        r_neu_mean = r_neu_sum / len(r)
-
-        r_ope_sum = sum(ope_data_dict[point] for point in r) if len(r) > 1 else ope_data_dict[r[0]]
-        r_ope_mean = r_ope_sum / len(r)
+        if len(political_data_dict) > 0:
+            r_pol_sum = sum(political_data_dict[point] for point in r) if len(r) > 1 else political_data_dict[r[0]]
+            r_pol_mean = r_pol_sum / len(r)
+        if len(ext_data_dict) > 0:
+            r_ext_sum = sum(ext_data_dict[point] for point in r) if len(r) > 1 else ext_data_dict[r[0]]
+            r_ext_mean = r_ext_sum / len(r)
+        if len(agr_data_dict) > 0:
+            r_agr_sum = sum(agr_data_dict[point] for point in r) if len(r) > 1 else agr_data_dict[r[0]]
+            r_agr_mean = r_agr_sum / len(r)
+        if len(con_data_dict) > 0:
+            r_con_sum = sum(con_data_dict[point] for point in r) if len(r) > 1 else con_data_dict[r[0]]
+            r_con_mean = r_con_sum / len(r)
+        if len(neu_data_dict) > 0:
+            r_neu_sum = sum(neu_data_dict[point] for point in r) if len(r) > 1 else neu_data_dict[r[0]]
+            r_neu_mean = r_neu_sum / len(r)
+        if len(ope_data_dict) > 0:
+            r_ope_sum = sum(ope_data_dict[point] for point in r) if len(r) > 1 else ope_data_dict[r[0]]
+            r_ope_mean = r_ope_sum / len(r)
 
         for point in r:
-            ssd += pow(political_data_dict[point] - r_pol_mean, 2)
-            ssd += pow(ext_data_dict[point] - r_ext_mean, 2)
-            ssd += pow(agr_data_dict[point] - r_agr_mean, 2)
-            ssd += pow(con_data_dict[point] - r_con_mean, 2)
-            ssd += pow(neu_data_dict[point] - r_neu_mean, 2)
-            ssd += pow(ope_data_dict[point] - r_ope_mean, 2)
+            if len(political_data_dict) > 0:
+                ssd += pow(political_data_dict[point] - r_pol_mean, 2)
+            if len(ext_data_dict) > 0:
+                ssd += pow(ext_data_dict[point] - r_ext_mean, 2)
+            if len(agr_data_dict) > 0:
+                ssd += pow(agr_data_dict[point] - r_agr_mean, 2)
+            if len(con_data_dict) > 0:
+                ssd += pow(con_data_dict[point] - r_con_mean, 2)
+            if len(neu_data_dict) > 0:
+                ssd += pow(neu_data_dict[point] - r_neu_mean, 2)
+            if len(ope_data_dict) > 0:
+                ssd += pow(ope_data_dict[point] - r_ope_mean, 2)
 
     return ssd
 
@@ -191,10 +263,28 @@ def choose_most_similar_pop_density(e_star_ru_list, e_star_rv_list, dens_data_di
     print("Chose: " + str(r_u) + " and " + str(r_v))
     return r_u, r_v
 
+# Find the two regions with the max average population density difference (i.e. max(avg_pop_dens_ru - avg_pop_dens_rv)
+# Inputs: e_star_ru_list: list of potential r_u's (list of tuples), e_star_rv_list: list of potential r_v's (list of tuples)
+# Outputs: r_u and r_v, each of which is a list of tuples
+def choose_most_dissimilar_pop_density(e_star_ru_list, e_star_rv_list, dens_data_dict):
+    print("Breaking tie between: " + str(e_star_ru_list) + " and " + str(e_star_rv_list))
+    r_u = None
+    r_v = None
+    max_diff = -1 * float('inf')
+    for i, r in enumerate(e_star_ru_list): # iterate through each pair of potential r_u and r_v's
+        avg_pop_dens_ru = sum([dens_data_dict[point] for point in r]) / len(r) if len(r) > 1 else dens_data_dict[r[0]]
+        avg_pop_dens_rv = sum([dens_data_dict[e_star_rv_list[i][j]] for j in range(0,len(e_star_rv_list[i]))]) / len(e_star_rv_list[i]) if len(r) > 1 else dens_data_dict[e_star_rv_list[i][0]]
+        if abs(avg_pop_dens_ru - avg_pop_dens_rv) > max_diff:
+            max_diff = abs(avg_pop_dens_ru - avg_pop_dens_rv)
+            r_u = r
+            r_v = e_star_rv_list[i]
+    print("Chose: " + str(r_u) + " and " + str(r_v))
+    return r_u, r_v
+
 
 # Executes Ward's algorithm
-# Input: spatially_contiguous, a boolean
-def wards_algorithm(first_order_edges=False):
+# Input: first_order_edges (boolean), vars to consider (list of strings)
+def wards_algorithm(first_order_edges=False, vars=['POL IDEN', 'AVG_EXTROVERT', 'AVG_AGREEABLE', 'AVG_CONSCIENTIOUS', 'AVG_NEUROTIC', 'AVG_OPEN']):
     # Load data from .csv files
     variables = pd.read_csv('all6variables_regionalization_final.xlsx - ALL6VARIABLES.csv', delimiter=',')
     contiguity_data = pd.read_csv('all6variables_regionalization_final.xlsx - CONTIGUITY.csv', delimiter=',')
@@ -204,12 +294,22 @@ def wards_algorithm(first_order_edges=False):
     final_regions_file = ''
     edges_removed_file = ''
     if not first_order_edges:
-        data_filename = 'regionalization_pop_density_tiebreaker.txt'
-        final_regions_file = 'final_regions_pop_density_tiebreaker.txt'
+        data_filename = 'regionalization_pop_density_tiebreaker'
+        final_regions_file = 'final_regions_pop_density_tiebreaker'
     else:
-        data_filename = 'regionalization_pop_density_tiebreaker_first_order_edges.txt'
-        final_regions_file = 'final_regions_pop_density_tiebreaker_first_order_edges.txt'
-        edges_removed_file = 'first_order_edges_tree_pop_density_tiebreaker.txt'
+        data_filename = 'regionalization_pop_density_tiebreaker_first_order_edges'
+        final_regions_file = 'final_regions_pop_density_tiebreaker_first_order_edges'
+        edges_removed_file = 'first_order_edges_tree_pop_density_tiebreaker'
+    if len(vars) < 6:
+        vars_abbreviated = {'POL IDEN': 'POL', 'AVG_EXTROVERT': 'EXT', 'AVG_AGREEABLE': 'AGR', 'AVG_CONSCIENTIOUS': 'CON', 'AVG_NEUROTIC': 'NEU', 'AVG_OPEN': 'OPE'}
+        for var in vars:
+            data_filename += '_' + vars_abbreviated[var]
+            final_regions_file += '_' + vars_abbreviated[var]
+            edges_removed_file += '_' + vars_abbreviated[var]
+    data_filename += '.txt'
+    final_regions_file += '.txt'
+    edges_removed_file += '.txt'
+
     headers = 'r_u, r_v, r_u SSD, r_v SSD, sum of within-region SSD\n'  # Column names
     file1 = open(data_filename, "w")
     file1.writelines(headers)
@@ -232,39 +332,45 @@ def wards_algorithm(first_order_edges=False):
     # Load data into dictionaries
     # political data
     political_data_dict = {}
-    political_data_list = pd.DataFrame(variables, columns=['ID#', 'POL IDEN']).values.tolist()
-    for p in political_data_list:
-        political_data_dict[p[0]] = p[1]
+    if 'POL IDEN' in vars:
+        political_data_list = pd.DataFrame(variables, columns=['ID#', 'POL IDEN']).values.tolist()
+        for p in political_data_list:
+            political_data_dict[p[0]] = p[1]
 
     # EXT data
     ext_data_dict = {}
-    ext_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_EXTROVERT']).values.tolist()
-    for e in ext_data_list:
-        ext_data_dict[e[0]] = e[1]
+    if 'AVG_EXTROVERT' in vars:
+        ext_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_EXTROVERT']).values.tolist()
+        for e in ext_data_list:
+            ext_data_dict[e[0]] = e[1]
 
     # AGR data
     agr_data_dict = {}
-    agr_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_AGREEABLE']).values.tolist()
-    for a in agr_data_list:
-        agr_data_dict[a[0]] = a[1]
+    if 'AVG_AGREEABLE' in vars:
+        agr_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_AGREEABLE']).values.tolist()
+        for a in agr_data_list:
+            agr_data_dict[a[0]] = a[1]
 
     # CON data
     con_data_dict = {}
-    con_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_CONSCIENTIOUS']).values.tolist()
-    for c in con_data_list:
-        con_data_dict[c[0]] = c[1]
+    if 'AVG_CONSCIENTIOUS' in vars:
+        con_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_CONSCIENTIOUS']).values.tolist()
+        for c in con_data_list:
+            con_data_dict[c[0]] = c[1]
 
     # NEU data
     neu_data_dict = {}
-    neu_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_NEUROTIC']).values.tolist()
-    for n in neu_data_list:
-        neu_data_dict[n[0]] = n[1]
+    if 'AVG_NEUROTIC' in vars:
+        neu_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_NEUROTIC']).values.tolist()
+        for n in neu_data_list:
+            neu_data_dict[n[0]] = n[1]
 
     # OPE
     ope_data_dict = {}
-    ope_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_OPEN']).values.tolist()
-    for o in ope_data_list:
-        ope_data_dict[o[0]] = o[1]
+    if 'AVG_OPEN' in vars:
+        ope_data_list = pd.DataFrame(variables, columns=['ID#', 'AVG_OPEN']).values.tolist()
+        for o in ope_data_list:
+            ope_data_dict[o[0]] = o[1]
 
     # Population Density
     dens_data_dict = {}
@@ -320,9 +426,11 @@ def wards_algorithm(first_order_edges=False):
         num_merges += 1
 
         if first_order_edges:  # record the shortest first order edges connecting the two regions
+            if while_loop_repeats == 100:
+                x=0
             min_ssd, id1, id2 = get_min_ssd_and_first_order_edge(r_u, r_v, C, R, political_data_dict, ext_data_dict,
                                                                  agr_data_dict, con_data_dict, neu_data_dict,
-                                                                 ope_data_dict)
+                                                                 ope_data_dict, dens_data_dict)
             G_min_edges.add_edge(id1, id2, weight=min_ssd)  # add edge to graph that will be used in Algorithm 2
             file3.write(str(id1) + ", " + str(id2) + ", " + str(min_ssd) + "\n")
 
@@ -374,7 +482,7 @@ def wards_algorithm(first_order_edges=False):
     file2.write("Number of merges: " + str(num_merges))
 
     if first_order_edges:
-        last_edge_weight, last_e1, last_e2 = get_min_ssd_and_first_order_edge(R[0], R[1], C, R, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
+        last_edge_weight, last_e1, last_e2 = get_min_ssd_and_first_order_edge(R[0], R[1], C, R, political_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict)
         G_min_edges.add_edge(last_e1, last_e2, weight=last_edge_weight)  # add final edge remaining in G
         file3.write(str(last_e1) + ", " + str(last_e2) + ", " + str(last_edge_weight) + "\n")
 
@@ -383,12 +491,13 @@ def wards_algorithm(first_order_edges=False):
 
 
 # Returns a tree containing the set of edges removed, as well as the single edge remaining in the final cluster
-def get_ward_tree():
-    G, G_min_edges = wards_algorithm(first_order_edges=True)
+def get_ward_tree(vars_used=['POL IDEN', 'AVG_EXTROVERT', 'AVG_AGREEABLE', 'AVG_CONSCIENTIOUS', 'AVG_NEUROTIC', 'AVG_OPEN']):
+    #G, G_min_edges = wards_algorithm(first_order_edges=True)
+    G, G_min_edges = wards_algorithm(first_order_edges=True, vars=vars_used)
     print("Edges for tree in algorithm 2: " + str(list(G_min_edges.edges())))
     return G_min_edges
 
 
 if __name__ == '__main__':
-    wards_algorithm()
+    wards_algorithm(first_order_edges=False, vars=['POL IDEN'])
     get_ward_tree()
