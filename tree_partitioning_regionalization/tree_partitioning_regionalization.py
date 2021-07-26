@@ -9,12 +9,12 @@ from contiguity_contrained_ward.contiguity_constrained_ward_pop_density_tiebreak
 # Calculates hg*, the homogeneity gain, of a tree
 # Input: An nx graph
 # Output: hg_star (a float), e_star (tuple of 2 ints), Ta and Tb (nx graphs resulting when the best edge e* is removed)
-def get_hg(tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict):
-    hg_star = 0
+def get_hg(tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict, min_region_size):
+    hg_star = -1 * float('inf')
     e_star = None
     D = list(tree.edges(data=True))
-    D_a = []
-    D_b = []
+    D_a = None
+    D_b = None
 
     r_u_ties = [] # list of tuples, each of which is a single ID (int)
     r_v_ties = []
@@ -36,18 +36,20 @@ def get_hg(tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu
         h_D_ia = get_SSD_one_region(list(D_ia.nodes()), pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
         h_D_ib = get_SSD_one_region(list(D_ib.nodes()), pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
         hg = h_D - h_D_ia - h_D_ib
-        if hg > hg_star:
-            hg_star = hg
-            e_star = (edge[0], edge[1])
-            D_a = D_ia
-            D_b = D_ib
-            r_u_ties = [tuple([edge[0]])] # remove previous potential r_us that have smaller hg
-            r_v_ties = [tuple([edge[1]])]
-            best_edges_trees = {e_star: [D_ia, D_ib]}
+        if hg > hg_star: # potential best edge found
+            if len(D_ia.nodes()) >= 8 and len(D_ib.nodes()) >= 8:  # subtrees must have a minimum of 8 nodes
+                hg_star = hg
+                e_star = (edge[0], edge[1])
+                D_a = D_ia
+                D_b = D_ib
+                r_u_ties = [tuple([edge[0]])] # remove previous potential r_us that have smaller hg
+                r_v_ties = [tuple([edge[1]])]
+                best_edges_trees = {e_star: [D_ia, D_ib]}
         elif hg == hg_star: # tie found
-            r_u_ties.append(tuple([edge[0]]))
-            r_v_ties.append(tuple([edge[1]]))
-            best_edges_trees[(edge[0], edge[1])] = [D_ia, D_ib]
+            if len(D_ia.nodes()) >= 8 or len(D_ib.nodes()) >= 8:  # subtrees must have a minimum of 8 nodes
+                r_u_ties.append(tuple([edge[0]]))
+                r_v_ties.append(tuple([edge[1]]))
+                best_edges_trees[(edge[0], edge[1])] = [D_ia, D_ib]
 
     if len(r_u_ties) > 1 and len(r_v_ties) > 1: # Need to break tie
         e1, e2 = choose_most_dissimilar_pop_density(r_u_ties, r_v_ties, dens_data_dict)
@@ -55,7 +57,7 @@ def get_hg(tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu
         D_a = best_edges_trees[e_star][0]
         D_b = best_edges_trees[e_star][1]
 
-    #if D_a == [] or D_b == []:
+    #if D_a == None or D_b == None:
     #    x=0
     return hg_star, e_star, D_a, D_b
 
@@ -96,7 +98,7 @@ def get_2_new_trees(nx_graph):
 
     return new_tree1, new_tree2
 
-def tree_partitioning_regionalization(attrs=['POL IDEN', 'AVG_EXTROVERT', 'AVG_AGREEABLE', 'AVG_CONSCIENTIOUS', 'AVG_NEUROTIC', 'AVG_OPEN']):
+def tree_partitioning_regionalization(attrs=['POL IDEN', 'AVG_EXTROVERT', 'AVG_AGREEABLE', 'AVG_CONSCIENTIOUS', 'AVG_NEUROTIC', 'AVG_OPEN'], min_region_size=None):
     ward_tree = get_ward_tree(vars_used=attrs) # build tree using output of first algorithm
 
     # Load data from .csv files
@@ -161,21 +163,25 @@ def tree_partitioning_regionalization(attrs=['POL IDEN', 'AVG_EXTROVERT', 'AVG_A
     if len(attrs) < 6:
         for variable in attrs:
             tree_partitions_filename += '_' + vars_abbreviated[variable]
+    if min_region_size != None:
+        tree_partitions_filename += '_min_region_size_' + str(min_region_size)
     tree_partitions_filename += '.txt'
     tree_partitions_file = open(tree_partitions_filename, "w")
 
     # Step 1: Calculate homogeneity gain of initial tree (ward_tree), and the best tree with the largest hg
-    hg_star, e_star, D_a, D_b = get_hg(ward_tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict)
+    hg_star, e_star, D_a, D_b = get_hg(ward_tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict, min_region_size)
     trees = {ward_tree: hg_star} # key: tree (nxgraph), value: float. Denoted R in the article
     for k in range(2, 31):
         while len(list(trees.keys())) < k:
             # Step 2: Find the best tree with the largest hg*
             best_tree = [t for t in list(trees.keys()) if trees[t] == max(list(trees.values()))][0]
             # Step 3: Cut best_tree into two trees by removing the best edge
-            hg_star, e_star, T_a, T_b = get_hg(best_tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict)
+            hg_star, e_star, T_a, T_b = get_hg(best_tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict, min_region_size)
+            if T_a == None or T_b == None: # enters this statement if no cut found
+                raise Exception('No cut found')
             # Step 4: Calculate hg* for T_a and T_b
-            hg_star_T_a, e_star_T_a, T_a_a, T_a_b = get_hg(T_a, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict)
-            hg_star_T_b, e_star_T_b, T_b_a, T_b_b = get_hg(T_b, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict)
+            hg_star_T_a, e_star_T_a, T_a_a, T_a_b = get_hg(T_a, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict, min_region_size)
+            hg_star_T_b, e_star_T_b, T_b_a, T_b_b = get_hg(T_b, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict, min_region_size)
             del trees[best_tree]
             trees[T_a] = hg_star_T_a
             trees[T_b] = hg_star_T_b
@@ -190,5 +196,5 @@ def tree_partitioning_regionalization(attrs=['POL IDEN', 'AVG_EXTROVERT', 'AVG_A
 
 
 if __name__ == "__main__":
-    tree_partitioning_regionalization(attrs=['POL IDEN'])
+    tree_partitioning_regionalization(min_region_size=8)
     #tree_partitioning_regionalization()
