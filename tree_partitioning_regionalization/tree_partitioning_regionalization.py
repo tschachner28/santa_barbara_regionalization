@@ -37,7 +37,7 @@ def get_hg(tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu
         h_D_ib = get_SSD_one_region(list(D_ib.nodes()), pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict)
         hg = h_D - h_D_ia - h_D_ib
         if hg > hg_star: # potential best edge found
-            if len(D_ia.nodes()) >= 8 and len(D_ib.nodes()) >= 8:  # subtrees must have a minimum of 8 nodes
+            if len(D_ia.nodes()) >= min_region_size and len(D_ib.nodes()) >= min_region_size:  # subtrees must have a minimum of 8 nodes
                 hg_star = hg
                 e_star = (edge[0], edge[1])
                 D_a = D_ia
@@ -46,7 +46,7 @@ def get_hg(tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu
                 r_v_ties = [tuple([edge[1]])]
                 best_edges_trees = {e_star: [D_ia, D_ib]}
         elif hg == hg_star: # tie found
-            if len(D_ia.nodes()) >= 8 or len(D_ib.nodes()) >= 8:  # subtrees must have a minimum of 8 nodes
+            if len(D_ia.nodes()) >= min_region_size or len(D_ib.nodes()) >= min_region_size:  # subtrees must have a minimum of 8 nodes
                 r_u_ties.append(tuple([edge[0]]))
                 r_v_ties.append(tuple([edge[1]]))
                 best_edges_trees[(edge[0], edge[1])] = [D_ia, D_ib]
@@ -98,12 +98,21 @@ def get_2_new_trees(nx_graph):
 
     return new_tree1, new_tree2
 
-def tree_partitioning_regionalization(attrs=['POL IDEN', 'AVG_EXTROVERT', 'AVG_AGREEABLE', 'AVG_CONSCIENTIOUS', 'AVG_NEUROTIC', 'AVG_OPEN'], min_region_size=None):
+def tree_partitioning_regionalization(attrs=['POL IDEN', 'AVG_EXTROVERT', 'AVG_AGREEABLE', 'AVG_CONSCIENTIOUS', 'AVG_NEUROTIC', 'AVG_OPEN'], min_region_size=0):
     ward_tree = get_ward_tree(vars_used=attrs) # build tree using output of first algorithm
 
     # Load data from .csv files
-    variables = pd.read_csv('all6variables_regionalization_final.xlsx - ALL6VARIABLES.csv', delimiter=',')
-    contiguity_data = pd.read_csv('all6variables_regionalization_final.xlsx - CONTIGUITY.csv', delimiter=',')
+    variables = None
+    contiguity_data = None
+    if len(attrs) == 6:
+        variables = pd.read_csv('all6variables_regionalization_final.xlsx - ALL6VARIABLES.csv', delimiter=',')
+        contiguity_data = pd.read_csv('all6variables_regionalization_final.xlsx - CONTIGUITY.csv', delimiter=',')
+    elif len(attrs) == 1 and 'POL IDEN' in attrs:
+        variables = pd.read_csv('political_regionalization (1) - POLITICAL.csv', delimiter=',')
+        contiguity_data = pd.read_csv('political_regionalization (1) - CONTIGUITY.csv', delimiter=',')
+    elif len(attrs) == 1:
+        variables = pd.read_csv('personality_regionalization - PERSONALITY.csv', delimiter=',')
+        contiguity_data = pd.read_csv('personality_regionalization - CONTIGUITY.csv', delimiter=',')
 
     R = pd.DataFrame(variables, columns=['ID#']).values.tolist()  # regions (set of 500 data points)
 
@@ -163,7 +172,7 @@ def tree_partitioning_regionalization(attrs=['POL IDEN', 'AVG_EXTROVERT', 'AVG_A
     if len(attrs) < 6:
         for variable in attrs:
             tree_partitions_filename += '_' + vars_abbreviated[variable]
-    if min_region_size != None:
+    if min_region_size != 0:
         tree_partitions_filename += '_min_region_size_' + str(min_region_size)
     tree_partitions_filename += '.txt'
     tree_partitions_file = open(tree_partitions_filename, "w")
@@ -171,7 +180,7 @@ def tree_partitioning_regionalization(attrs=['POL IDEN', 'AVG_EXTROVERT', 'AVG_A
     # Step 1: Calculate homogeneity gain of initial tree (ward_tree), and the best tree with the largest hg
     hg_star, e_star, D_a, D_b = get_hg(ward_tree, pol_data_dict, ext_data_dict, agr_data_dict, con_data_dict, neu_data_dict, ope_data_dict, dens_data_dict, min_region_size)
     trees = {ward_tree: hg_star} # key: tree (nxgraph), value: float. Denoted R in the article
-    for k in range(2, 31):
+    for k in range(2, 11):
         while len(list(trees.keys())) < k:
             # Step 2: Find the best tree with the largest hg*
             best_tree = [t for t in list(trees.keys()) if trees[t] == max(list(trees.values()))][0]
@@ -196,5 +205,11 @@ def tree_partitioning_regionalization(attrs=['POL IDEN', 'AVG_EXTROVERT', 'AVG_A
 
 
 if __name__ == "__main__":
-    tree_partitioning_regionalization(min_region_size=8)
-    #tree_partitioning_regionalization()
+    #tree_partitioning_regionalization(attrs=['POL IDEN'],min_region_size=8)
+    #tree_partitioning_regionalization(attrs=['AVG_EXTROVERT'], min_region_size=8)
+    #tree_partitioning_regionalization(attrs=['AVG_AGREEABLE'], min_region_size=8)
+    #tree_partitioning_regionalization(attrs=['AVG_CONSCIENTIOUS'], min_region_size=8)
+    #tree_partitioning_regionalization(attrs=['AVG_NEUROTIC'], min_region_size=8)
+    #tree_partitioning_regionalization(attrs=['AVG_OPEN'], min_region_size=8)
+    #tree_partitioning_regionalization(min_region_size=8)
+    tree_partitioning_regionalization()

@@ -143,7 +143,7 @@ def get_SSD_two_regions(r1, r2, political_data_dict, ext_data_dict, agr_data_dic
             ssd_r1_r2 += pow(political_data_dict[point] - r1_r2_pol_mean, 2)
         if len(ext_data_dict) > 0:
             ssd_r1_r2 += pow(ext_data_dict[point] - r1_r2_ext_mean, 2)
-        if len(ext_data_dict) > 0:
+        if len(agr_data_dict) > 0:
             ssd_r1_r2 += pow(agr_data_dict[point] - r1_r2_agr_mean, 2)
         if len(con_data_dict) > 0:
             ssd_r1_r2 += pow(con_data_dict[point] - r1_r2_con_mean, 2)
@@ -286,9 +286,17 @@ def choose_most_dissimilar_pop_density(e_star_ru_list, e_star_rv_list, dens_data
 # Input: first_order_edges (boolean), vars to consider (list of strings)
 def wards_algorithm(first_order_edges=False, vars=['POL IDEN', 'AVG_EXTROVERT', 'AVG_AGREEABLE', 'AVG_CONSCIENTIOUS', 'AVG_NEUROTIC', 'AVG_OPEN']):
     # Load data from .csv files
-    variables = pd.read_csv('all6variables_regionalization_final.xlsx - ALL6VARIABLES.csv', delimiter=',')
-    contiguity_data = pd.read_csv('all6variables_regionalization_final.xlsx - CONTIGUITY.csv', delimiter=',')
-
+    variables = None
+    contiguity_data = None
+    if len(vars) == 6:
+        variables = pd.read_csv('all6variables_regionalization_final.xlsx - ALL6VARIABLES.csv', delimiter=',')
+        contiguity_data = pd.read_csv('all6variables_regionalization_final.xlsx - CONTIGUITY.csv', delimiter=',')
+    elif len(vars) == 1 and 'POL IDEN' in vars:
+        variables = pd.read_csv('political_regionalization (1) - POLITICAL.csv', delimiter=',')
+        contiguity_data = pd.read_csv('political_regionalization (1) - CONTIGUITY.csv', delimiter=',')
+    elif len(vars) == 1:
+        variables = pd.read_csv('personality_regionalization - PERSONALITY.csv', delimiter=',')
+        contiguity_data = pd.read_csv('personality_regionalization - CONTIGUITY.csv', delimiter=',')
     # Output files
     data_filename = ''
     final_regions_file = ''
@@ -380,7 +388,13 @@ def wards_algorithm(first_order_edges=False, vars=['POL IDEN', 'AVG_EXTROVERT', 
 
     # Step 2: Initialize graph's edge set to empty set
     G = nx.Graph()
-    C_list = pd.DataFrame(contiguity_data, columns=['source_ID', 'nbr_ID']).values.tolist()
+    C_list = []
+    if len(vars) == 6:
+        C_list = pd.DataFrame(contiguity_data, columns=['source_ID', 'nbr_ID']).values.tolist()
+    elif len(vars) == 1 and 'POL IDEN' in vars:
+        C_list = pd.DataFrame(contiguity_data, columns=['source_ID', 'neighbor_ID']).values.tolist()
+    elif len(vars) == 1:
+        C_list = pd.DataFrame(contiguity_data, columns=['SOURCE_ID', 'nbr_ID_']).values.tolist()
     C = {}  # contiguity dictionary
     for c in C_list:
         if c[0] not in C.keys():
